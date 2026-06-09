@@ -34,9 +34,9 @@ module.exports = async (req, res) => {
             }
         }
 
-        let x = "126.880213191175"; 
-        let y = "37.4850160418061";  
-        let locationName = "가산디지털단지";
+        let x = "126.880014"; 
+        let y = "37.484960";  
+        let locationName = "내 집";
 
         if (locationText && locationText.length > 0) {
             const kakaoSearchUrl = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(locationText)}`;
@@ -64,11 +64,13 @@ module.exports = async (req, res) => {
         }
 
         const selected = places.sort(() => 0.5 - Math.random()).slice(0, 3);
+        
+        // 형님이 요청하신 형식으로 정확히 구성했습니다
         const attachments = selected.map(p => ({
             color: '#36a64f',
             title: p.place_name,
-            // 상세 메뉴(카테고리)를 추출해서 보여줍니다
-            text: `🍽️ 분류: ${p.category_name.split(' > ').pop()}\n📍 주소: ${p.road_address_name || p.address_name}\n📞 전화번호: ${p.phone || '없음'}`
+            title_link: p.place_url, // 클릭 시 링크 연결
+            text: `🗂️ 분류: ${p.category_name.split(' > ').pop()}\n📞 전화번호: ${p.phone || '없음'}\n📍 주소: ${p.road_address_name || p.address_name}`
         }));
 
         return res.status(200).json({
