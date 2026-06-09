@@ -3,40 +3,45 @@ const querystring = require('querystring');
 
 const KAKAO_API_KEY = '15854ca337f7a2f630d72b3cdcbd87be';
 
-// ... (getRawBody 함수는 그대로 사용) ...
+// 1. 함수를 명확하게 밖으로 정의합니다.
+async function getRawBody(req) {
+    return new Promise((resolve, reject) => {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', () => resolve(body));
+        req.on('error', err => reject(err));
+    });
+}
 
+// 2. 이제 module.exports 안에서 getRawBody를 마음껏 부를 수 있습니다.
 module.exports = async (req, res) => {
-    if (req.method !== 'POST') return res.status(200).send("OK");
+    if (req.method !== 'POST') return res.status(200).send("정상");
 
-    // 슬랙 응답 지연 방지 (200 OK)
     res.status(200).json({
         response_type: 'in_channel',
         text: "🔍 맛집 탐색 중... 잠시만 기다려주세요!"
     });
 
     try {
-        const rawBody = await getRawBody(req);
+        const rawBody = await getRawBody(req); // 이제 에러 안 납니다!
         const bodyData = querystring.parse(rawBody);
         const fullText = (bodyData.text || '').trim();
         const responseUrl = bodyData.response_url;
 
-        // 1. 카테고리 추출
         const categories = ['한식', '일식', '중식', '양식', '카페', '디저트', '고기', '치킨'];
         let foodCategory = "";
         let searchKeyword = "맛집";
-        let locationText = fullText; // 위치 검색용 텍스트
+        let locationText = fullText;
 
         for (const cat of categories) {
             if (fullText.includes(cat)) {
                 foodCategory = cat;
                 searchKeyword = cat;
-                // 위치 텍스트에서 카테고리 단어 제거 (깔끔하게 위치명만 추출)
                 locationText = fullText.replace(cat, '').trim();
                 break;
             }
         }
 
-        // 2. 위치 좌표 가져오기 (사용자가 지역을 입력했으면 그곳 좌표, 아니면 기본 가산디지털단지)
         let x = "126.880213191175"; 
         let y = "37.4850160418061";  
         let locationName = "가산디지털단지";
@@ -55,19 +60,9 @@ module.exports = async (req, res) => {
             }
         }
 
-        // 3. 맛집 검색 (최종)
         const categoryGroupCode = (foodCategory === '카페' || foodCategory === '디저트') ? 'CE7' : 'FD6';
-        const kakaoTargetUrl = `https://dapi.kakao.com/v2/local/search/keyword.json`;
-        
-        const response = await axios.get(kakaoTargetUrl, {
-            params: {
-                query: searchKeyword,
-                category_group_code: categoryGroupCode,
-                x: x,
-                y: y,
-                radius: 1000,
-                sort: 'distance'
-            },
+        const response = await axios.get(`https://dapi.kakao.com/v2/local/search/keyword.json`, {
+            params: { query: searchKeyword, category_group_code: categoryGroupCode, x: x, y: y, radius: 1000, sort: 'distance' },
             headers: { Authorization: `KakaoAK ${KAKAO_API_KEY}` }
         });
 
@@ -77,9 +72,8 @@ module.exports = async (req, res) => {
             return;
         }
 
-        // 결과 랜덤 3개 추출 후 전송
-        const selectedPlaces = places.sort(() => 0.5 - Math.random()).slice(0, 3);
-        const attachments = selectedPlaces.map(p => ({
+        const selected = places.sort(() => 0.5 - Math.random()).slice(0, 3);
+        const attachments = selected.map(p => ({
             color: '#36a64f',
             title: p.place_name,
             title_link: p.place_url,
