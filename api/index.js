@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
         const bodyData = querystring.parse(rawBody);
         const fullText = (bodyData.text || '').trim();
 
-        const categories = ['한식', '일식', '중식', '양식', '카페', '디저트', '고기', '치킨', '피자', '소고기', '갈비', '족발', '회', '참치'];
+        const categories = ['한식', '일식', '중식', '양식', '카페', '디저트', '고기', '치킨', '피자', '족발', '소고기', '갈비', '회', '참치'];
         let foodCategory = "";
         let searchKeyword = "맛집";
         let locationText = fullText;
