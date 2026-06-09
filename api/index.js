@@ -15,16 +15,12 @@ async function getRawBody(req) {
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(200).send("정상");
 
-    // [수정] 즉시 응답 메시지 삭제함. 
-    // 결과 나올 때까지 아무 말도 안 하고 기다리게 만듦.
-
     try {
         const rawBody = await getRawBody(req);
         const bodyData = querystring.parse(rawBody);
         const fullText = (bodyData.text || '').trim();
-        const responseUrl = bodyData.response_url;
 
-        const categories = ['한식', '일식', '중식', '양식', '카페', '디저트', '고기', '치킨'];
+        const categories = ['한식', '일식', '중식', '양식', '카페', '디저트', '고기', '치킨', '피자', '소고기', '갈비', '족발', '회', '참치'];
         let foodCategory = "";
         let searchKeyword = "맛집";
         let locationText = fullText;
@@ -64,7 +60,6 @@ module.exports = async (req, res) => {
 
         const places = response.data.documents;
         if (!places || places.length === 0) {
-            // 결과가 없으면 바로 응답
             return res.status(200).json({ response_type: 'in_channel', text: `📍 *[${locationName}]* 주변에 원하시는 *[${searchKeyword}]* 결과를 찾지 못했습니다.` });
         }
 
@@ -72,10 +67,10 @@ module.exports = async (req, res) => {
         const attachments = selected.map(p => ({
             color: '#36a64f',
             title: p.place_name,
-            text: `📍 주소: ${p.road_address_name || p.address_name}\n📞 전화번호: ${p.phone || '없음'}`
+            // 상세 메뉴(카테고리)를 추출해서 보여줍니다
+            text: `🍽️ 분류: ${p.category_name.split(' > ').pop()}\n📍 주소: ${p.road_address_name || p.address_name}\n📞 전화번호: ${p.phone || '없음'}`
         }));
 
-        // 최종 결과 즉시 반환
         return res.status(200).json({
             response_type: 'in_channel',
             text: `🍔 *[${locationName}]* 주변 추천 ${foodCategory || ''} 맛집 리스트입니다!`,
